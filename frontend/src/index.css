@@ -1,0 +1,11 @@
+@import "tailwindcss";
+/* since this project uses tailwind v4 all ui codes should be in v4 and they use this import not below */
+/* i should import all those if it ware v 3 instead of the @import "tailwindcss"; which is for v4 
+@tailwind base;
+@tailwind components;
+@tailwind utilities; */
+/* Add this to your global CSS to ensure specificity */
+/* Optional custom styles */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
