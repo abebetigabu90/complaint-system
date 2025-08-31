@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute"
 import Logout from './components/logout'
 import StudentDashboard from "./pages/student/studentDashboard"
+import StudentProfilePage from "./pages/student/studentProfile"
 import AdminDashboard from "./pages/admin/adminDashboard"
 import ManageStudents from "./pages/admin/manageStudents"
 import Unauthorized from "./pages/Unauthorized"
@@ -32,6 +33,7 @@ return (
               <Route path="/student/dashboard" element={<StudentDashboard/>}/>
               <Route path="/student/submit" element={<SubmitComplaintPage />} />
               <Route path="/student/complaints" element={<Complaints />} />
+              <Route path="/student/profile" element={<StudentProfilePage />} />
           </Route>
       </Route>
       

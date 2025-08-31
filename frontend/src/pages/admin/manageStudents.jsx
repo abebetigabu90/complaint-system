@@ -36,6 +36,9 @@ export default function ManageStudents() {
 
   // Block/Unblock student
   const toggleStatus = async (id, currentStatus) => {
+   if (currentStatus === 'active' && !window.confirm("Are you sure you want to Block this student?")) {
+  return;
+}
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`http://localhost:3000/api/students/${id}/status`, {
@@ -52,7 +55,8 @@ export default function ManageStudents() {
       }
       
       const updated = await res.json();
-      setStudents(students.map((s) => (s._id === id ? updated : s)));
+      setStudents(students.map((s) => (s._id === id ? updated.student : s)));
+      alert(updated.message)
     } catch (err) {
       console.error("Error updating status:", err);
       alert("Failed to update student status");
@@ -65,7 +69,7 @@ export default function ManageStudents() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3000/api/students/${id}`, { 
+      const res = await fetch(`http://localhost:3000/api/students/delete/${id}`, { 
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
       });

@@ -6,9 +6,10 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import authMiddleware from './src/middleware/auth.js'
-// backend/server.js
-// backend/server.js
+import blockCheck from './src/middleware/blockCheck.js'
 import Admin from './src/models/Admin.js';  // ✅ Correct - relative path
+import Student from './src/models/Student.js'
+import complaint from './src/models/Complaint.js'
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect('mongodb://127.0.0.1:27017/complient-system');
@@ -36,46 +37,6 @@ const startServer = async () => {
 };
 
 startServer();
-//student schema
-const studentSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true, lowercase: true },
-  password: { type: String, required: true }
- });
-export const Student = mongoose.model('Student', studentSchema);
-
-const complaintSchema = new mongoose.Schema({
-    title: { 
-        type: String, 
-        trim: true, 
-        required: true ,
-        maxLength: 200
-    },
-    description: { 
-        type: String, 
-        trim: true, 
-        required: true ,
-        maxLength: 5000
-    },
-    status: { 
-        type: String, 
-        enum: ["submitted", "inProgress", "resolved", "pending_confirmation", "reopened", "closed"], 
-        default: 'submitted' 
-    },
-    resolvedBy:{type:String,trim: true},
-    resolvedAction:{type:String,trim: true},
-    resolvedAt:{type:Date},
-    reOpenedReason:{type:String},
-    reOpenedCount:{type:Number,default:0},
-    studentID: { 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'Student',  // Use string reference
-        required: true 
-    },
-    // assignedPerson: { type: String }
-}, { timestamps: true });
-complaintSchema.index({ createdAt: -1 });
-export const complaint = mongoose.model('complaint', complaintSchema);
 app.use(express.json());
 app.use(cookieParser());
 // Allow frontend to send cookies
@@ -116,7 +77,7 @@ app.post('/signup', async (req, res) => {
         const student = await Student.create({ 
             name, 
             email: email.toLowerCase(), 
-            password: hashed 
+            password: hashed ,
         });
         
         // Create JWT token
@@ -190,7 +151,7 @@ app.post('/logout',async(req,res)=>{
     return res.status(500).json({error:'internal server error'})
   }
 })
-app.post('/api/submit/complaints',async (req,res)=>{
+app.post('/api/submit/complaints',authMiddleware,blockCheck,async (req,res)=>{
     try{
        const {studentID,title,description} = req.body
        console.log(studentID)
@@ -208,7 +169,7 @@ app.post('/api/submit/complaints',async (req,res)=>{
         });
     }
 })
-
+//the ff api is for admin to view all complaints
 app.get('/api/complaints',async(req,res)=>{
   try{const complaints = await complaint.find()
     res.status(200).json(complaints)}
@@ -216,7 +177,8 @@ app.get('/api/complaints',async(req,res)=>{
     return res.status(500).send('internal server error')
   }
 })
-app.get("/api/complaints/mine", authMiddleware, async (req, res) => {
+//this api is for student to show his only complaint
+app.get("/api/complaints/mine", authMiddleware,blockCheck, async (req, res) => {
   try {
     // Use studentID to match your schema field name
     const complaints = await complaint.find({ studentID: req.user.id });
@@ -394,6 +356,104 @@ if(!checkAdmin){
 const students = await Student.find()
 return res.status(200).json({students})
 })
+   app.put('/api/students/:id/status', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !=='admin'){
+      return res.send('you are not authorized to do this!')
+    }
+    const { status: newStatus } = req.body;
+    const { id } = req.params;
+
+    // 1. Validate input
+    if (!newStatus || !['active', 'blocked'].includes(newStatus)) {
+      return res.status(400).json({ error: 'Invalid status value' });
+    }
+
+    // 2. Find student first to check existence and get email
+    const student = await Student.findById(id);
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    // 3. Prevent unnecessary updates
+    if (student.status === newStatus) {
+      return res.status(400).json({ error: `Student is already ${newStatus}` });
+    }
+
+    // 4. Update student
+    const updatedStudent = await Student.findByIdAndUpdate(
+      id,
+      { 
+        status: newStatus,
+        ...(newStatus === 'blocked' && { blockedAt: new Date() }),
+        ...(newStatus === 'active' && { blockedAt: null, blockedReason: null })
+      },
+      { new: true, runValidators: true }
+    ).select('-password'); // Exclude password
+
+    // // 5. Send email notification (async - don't wait for response)
+    // if (newStatus === 'blocked') {
+    //   emailService.sendEmail(
+    //     student.email,
+    //     'Account Status Update',
+    //     'Your account has been blocked due to system policy violation.'
+    //   ).catch(err => console.error('Email failed:', err));
+    // } else if (newStatus === 'active') {
+    //   emailService.sendEmail(
+    //     student.email,
+    //     'Account Status Update', 
+    //     'Your account has been unblocked after review. You can now access the system normally.'
+    //   ).catch(err => console.error('Email failed:', err));
+    // }
+
+    // 6. Send response
+    res.json({
+      message: `Student status updated to ${newStatus} successfully`,
+      student: updatedStudent
+    });
+
+  } catch (error) {
+    console.error('Status update error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+app.delete('/api/students/delete/:id', authMiddleware, async (req, res) => {
+  try {
+    const { role } = req.user; // Destructure role from req.user
+    const studentID = req.params.id;
+
+    if (role !== 'admin') {
+      return res.status(403).json({ error: 'You are not authorized to do this!' });
+    }
+
+    const student = await Student.findByIdAndDelete(studentID);
+    
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found!' });
+    }
+
+    return res.status(200).json({ message: 'Student account deleted successfully' });
+  } catch (e) {
+    console.error(e); // Log the error for debugging
+    return res.status(500).json({ error: 'Internal server error!' });
+  }
+});
+//the ff api is used for student to view his own profile 
+app.get('/api/student/profile', authMiddleware, async (req, res) => {
+  try {
+    const studentID = req.user.id;
+    const student = await Student.findById(studentID);
+
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found!' });
+    }
+
+    return res.status(200).json(student);
+  } catch (e) {
+    console.error(e); // Log the error for debugging
+    return res.status(500).json({ error: 'Internal server error!' });
+  }
+});
     // title: { 
     //     type: String, 
     //     trim: true, 

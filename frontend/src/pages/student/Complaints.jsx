@@ -53,7 +53,8 @@ export default function StudentComplaintsPage() {
   const [complaints, setComplaints] = useState([]);
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const [reopenReason, setReopenReason] = useState("");
-
+  const [blocked, setBlocked] = useState(false);
+  const [blockedReason, setBlockedReason] = useState("");
   const token = localStorage.getItem("token");
   const API_BASE = "http://localhost:3000"; // 👈 use consistent port
 
@@ -64,6 +65,15 @@ export default function StudentComplaintsPage() {
         const res = await fetch(`${API_BASE}/api/complaints/mine`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+
+          if (res.status === 403) {
+          const errorData = await res.json();
+          setBlocked(true);
+          setBlockedReason(errorData.reason || "Account blocked by administrator");
+          setComplaints([]);
+          return;
+        }
+
         const data = await res.json();
         setComplaints(data.complaints || []);
       } catch (err) {
@@ -116,6 +126,25 @@ export default function StudentComplaintsPage() {
       console.error(err);
     }
   };
+ if (blocked) {
+    return (
+      <div className="p-6 max-w-2xl mx-auto">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <div className="text-red-600 text-6xl mb-4">🚫</div>
+          <h2 className="text-xl font-bold text-red-800 mb-2">Account Blocked</h2>
+          <p className="text-red-700 mb-4">{blockedReason}</p>
+          <p className="text-gray-600">
+            You cannot access your complaints while your account is blocked.
+          </p>
+          <div className="mt-4 p-4 bg-red-100 rounded-lg">
+            <p className="text-sm text-red-800">
+              <strong>Contact support:</strong> support@yourdomain.com
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
