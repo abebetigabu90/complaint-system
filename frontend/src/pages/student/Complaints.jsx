@@ -86,6 +86,9 @@ export default function StudentComplaintsPage() {
 
   // Confirm complaint resolved
   const handleConfirm = async (id) => {
+  if(!window.confirm("Are you sure you want to confirm?")){
+    return
+  }
     try {
       const res = await fetch(`${API_BASE}/api/complaints/${id}/confirm`, {
         method: "PUT",
@@ -147,18 +150,32 @@ export default function StudentComplaintsPage() {
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">My Complaints</h1>
+          <div className="p-6">
+            <h1 className="text-xl font-bold mb-4">My Complaints</h1>
 
-      {complaints.length === 0 ? (
-        <p>No complaints submitted yet.</p>
-      ) : (
-        complaints.map((c) => (
-          <div key={c._id} className="border rounded-lg p-4 mb-4 shadow">
-            <h2 className="font-semibold">{c.title}</h2>
-            <p className="text-gray-700">{c.description}</p>
-            <p className="text-sm text-gray-500">Status: {getStatusDisplay(c.status)}</p>
-
+            {complaints.length === 0 ? (
+              <p>No complaints submitted yet.</p>
+            ) : (
+              complaints.map((c) => (
+                
+            <div key={c._id} className="bg-white border-l-4 border-blue-500 rounded-r-lg p-5 mb-5 shadow-sm">
+        <div className="flex items-start justify-between mb-3">
+          <span className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">
+            {c.complaintType}
+          </span>
+          <span className={`text-xs px-2 py-1 rounded ${
+            c.status === 'resolved' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+          }`}>
+            {getStatusDisplay(c.status)}
+          </span>
+        </div>
+        
+        <h3 className="font-semibold text-gray-800 mb-2">{c.title}</h3>
+        <p className="text-gray-600 text-sm mb-3 line-clamp-2">{c.description}</p>
+        
+        <div className="text-xs text-gray-400">
+          {new Date(c.createdAt).toLocaleDateString()} • ID: {c._id.slice(-6)}
+        </div>
             {/* Show resolution details */}
             {c.resolvedAction && (
               <div className="mt-2 p-2 border rounded bg-gray-50">
@@ -172,9 +189,9 @@ export default function StudentComplaintsPage() {
             )}
 
             {/* Show reopen reason if exists */}
-            {c.reopenReason && (
+            {c.reOpenedReason && (
               <p className="text-sm text-red-600 mt-2">
-                <strong>Reopen Reason:</strong> {c.reopenReason}
+                <strong>Reopen Reason:</strong> {c.reOpenedReason}
               </p>
             )}
             {/* Show reopened count */}

@@ -1,6 +1,12 @@
 import mongoose from 'mongoose'
 const complaintSchema = new mongoose.Schema({
-    title: { 
+    complaintType: {
+    type: String,
+    enum: ['cafa', 'library', 'dormitory', 'class', 'registrar', 'department', 'other'],
+    required:true,
+    default:'other'
+    } ,
+   title: { 
         type: String, 
         trim: true, 
         required: true ,

@@ -16,6 +16,7 @@ import PrivateRoute from "./components/privateRoute"
 import Complaints from "./pages/student/Complaints"
 import StudentLayout from "./layouts/studentLayout"
 import AdminLayout from "./layouts/adminLayout"
+import AdminReportsPage from './pages/admin/AdminReportsPage'
 function App() {
 return (
     <Router>
@@ -43,6 +44,8 @@ return (
               <Route path="/admin/dashboard" element={<AdminDashboard/>}/>
               <Route path="/admin/complaints" element={<ComplaintListPage/>} />
               <Route path="/admin/manageStudents" element={<ManageStudents/>} />
+              <Route path="/admin/reports" element={<AdminReportsPage/>} />      
+                {/* AdminReportsPage */}
           </Route>
       </Route>
     </Routes>

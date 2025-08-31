@@ -152,9 +152,14 @@ app.post('/logout',async(req,res)=>{
   }
 })
 app.post('/api/submit/complaints',authMiddleware,blockCheck,async (req,res)=>{
+    // studentID,
+    //       complaintType,
+    //       title,
+    //       description,
     try{
-       const {studentID,title,description} = req.body
+       const {studentID,complaintType,title,description} = req.body
        console.log(studentID)
+       console.log(complaintType)
        console.log(title)
        console.log(description)
         const newComplient = new complaint(req.body)
@@ -454,6 +459,30 @@ app.get('/api/student/profile', authMiddleware, async (req, res) => {
     return res.status(500).json({ error: 'Internal server error!' });
   }
 });
+app.get("/api/reports", authMiddleware, async (req, res) => {
+  try {
+    const totalStudents = await Student.countDocuments();
+    const totalComplaints = await complaint.countDocuments();
+
+    const byStatus = await complaint.aggregate([
+      { $group: { _id: "$status", count: { $sum: 1 } } }
+    ]);
+
+    const byType = await complaint.aggregate([
+      { $group: { _id: "$complaintType", count: { $sum: 1 } } }
+    ]);
+
+    res.json({
+      totalStudents,
+      totalComplaints,
+      byStatus: Object.fromEntries(byStatus.map(s => [s._id, s.count])),
+      byType: Object.fromEntries(byType.map(t => [t._id, t.count])),
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to load reports" });
+  }
+});
+
     // title: { 
     //     type: String, 
     //     trim: true, 
