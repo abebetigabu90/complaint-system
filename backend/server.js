@@ -10,18 +10,23 @@ import blockCheck from './src/middleware/blockCheck.js'
 import Admin from './src/models/Admin.js';  // ✅ Correct - relative path
 import Student from './src/models/Student.js'
 import complaint from './src/models/Complaint.js'
+dotenv.config()
 const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect('mongodb://127.0.0.1:27017/complient-system');
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 10000 // wait max 10s for connection
+    });
+    console.log("MongoDB connected successfully!");
   } catch (error) {
-    console.error(`Error: ${error.message}`);
-    process.exit(1);
+    console.error("MongoDB connection error:", error.message);
+    console.log("Retrying in 5 seconds...");
+    setTimeout(connectDB, 5000); // Retry after 5s
   }
 };
 
 export default connectDB;
-dotenv.config()
 const app = express()
 const PORT = process.env.PORT || 3000;
 
@@ -152,28 +157,54 @@ app.post('/logout',async(req,res)=>{
   }
 })
 app.post('/api/submit/complaints',authMiddleware,blockCheck,async (req,res)=>{
-    // studentID,
-    //       complaintType,
-    //       title,
-    //       description,
-    try{
-       const {studentID,complaintType,title,description} = req.body
-       console.log(studentID)
-       console.log(complaintType)
-       console.log(title)
-       console.log(description)
-        const newComplient = new complaint(req.body)
-        const savedComplient = await newComplient.save()
-        res.status(201).json(savedComplient)
+//     // studentID,
+//     //       complaintType,
+//     //       title,
+//     //       description,
+//     try{
+//        const {studentID,complaintType,title,description} = req.body
+//        console.log(studentID)
+//        console.log(complaintType)
+//        console.log(title)
+//        console.log(description)
+//         const newComplient = new complaint(req.body)
+//         const savedComplient = await newComplient.save()
+//         res.status(201).json(savedComplient)
+//     }
+//   catch (e) {
+//         console.error('Detailed error:', e); // Add this line
+//         res.status(500).json({ 
+//             error: 'internal server error',
+//             message: e.message // Send error details to frontend
+//         });
+//     }
+  try {
+    const { studentID, complaintType, title, description } = req.body;
+
+    if (!studentID || !complaintType || !title || !description) {
+      return res.status(400).json({ error: "All fields are required" });
     }
-  catch (e) {
-        console.error('Detailed error:', e); // Add this line
-        res.status(500).json({ 
-            error: 'internal server error',
-            message: e.message // Send error details to frontend
-        });
-    }
-})
+
+    console.log(studentID, complaintType, title, description);
+
+    const newComplaint = new complaint({
+      studentID,
+      complaintType,
+      title,
+      description
+    });
+
+    const savedComplaint = await newComplaint.save();
+    res.status(201).json(savedComplaint);
+
+  } catch (e) {
+    console.error('Detailed error:', e);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: e.message
+    });
+  }
+ })
 //the ff api is for admin to view all complaints
 app.get('/api/complaints',async(req,res)=>{
   try{const complaints = await complaint.find()

@@ -12,7 +12,7 @@ import Admin from '../models/Admin.js'
 const seedAdmin = async () => {
   try {
     const name = 'abebe';
-    const email = 'abebetigabu90@gmail.com';
+    const email = 'tigabuabebe70@gmail.com';
     const password = '1111';
     
     // Connect to database first
