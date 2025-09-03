@@ -227,7 +227,8 @@ app.put('/api/complaints/:id/resolve', async (req, res) => {
       {
         status: "pending_confirmation",
         resolvedAction: actionTaken.trim(),
-        resolvedAt: new Date()
+        resolvedAt: new Date(),
+        reSolvedCount:existingComplaint.reSolvedCount + 1
       },
       { new: true, runValidators: true } // Return updated doc + run schema validation
     );
@@ -298,6 +299,7 @@ app.put('/api/complaints/:id/confirm', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Internal server error!' });
   }
 });
+
 app.put('/api/complaints/:id/reopen', authMiddleware, async (req, res) => {
   try {
     const studentID = req.user.id;
@@ -309,7 +311,8 @@ app.put('/api/complaints/:id/reopen', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Reopen reason is required' });
     }
 
-    const specificComplaint = await complaint.findById(complaintID);
+    // Find the complaint
+    const specificComplaint = await complaint.findById(complaintID); // Note: Capitalized if using model
     
     if (!specificComplaint) {
       return res.status(404).json({ error: 'Complaint not found!' });
@@ -318,6 +321,13 @@ app.put('/api/complaints/:id/reopen', authMiddleware, async (req, res) => {
     // Check ownership - convert ObjectId to string for comparison
     if (specificComplaint.studentID.toString() !== studentID) {
       return res.status(403).json({ error: 'This complaint does not belong to you!' });
+    }
+
+    // Check rate limit first (before other validations)
+    if (specificComplaint.reOpenedCount >= 2) {
+      return res.status(429).json({ // Use 429 for rate limiting
+        error: "Rate limit exceeded",
+      });
     }
 
     // Check if complaint is in the correct status for reopening
@@ -335,11 +345,15 @@ app.put('/api/complaints/:id/reopen', authMiddleware, async (req, res) => {
       complaintID,
       {
         reOpenedReason: reason.trim(),
-        reOpenedCount: specificComplaint.reOpenedCount + 1,
-        status: 'reopened' // Your schema's exact value
+        reOpenedCount: (specificComplaint.reOpenedCount || 0) + 1,
+        status: 'reopened', // Your schema's exact value
+        reopenedAt: new Date() // Add timestamp for when it was reopened
       },
-      { new: true }
+      { new: true, runValidators: true } // Add runValidators to ensure schema validation
     );
+
+    // Log the reopening action
+    console.log(`Complaint ${complaintID} reopened by student ${studentID}`);
 
     return res.status(200).json({
       complaint: updatedComplaint,
@@ -348,6 +362,12 @@ app.put('/api/complaints/:id/reopen', authMiddleware, async (req, res) => {
 
   } catch (error) {
     console.error('Reopen error:', error);
+    
+    // Handle specific MongoDB errors
+    if (error.name === 'CastError') {
+      return res.status(400).json({ error: 'Invalid complaint ID format' });
+    }
+    
     return res.status(500).json({ error: 'Internal server error!' });
   }
 });
