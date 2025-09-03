@@ -306,6 +306,7 @@ export default function StudentComplaintsPage() {
       
       const data = await res.json();
       
+      
       // Handle rate limit from backend
       // if (data.rateLimited) {
       //   setRateLimit(true);
@@ -352,6 +353,28 @@ export default function StudentComplaintsPage() {
       setComplaints(complaints.map((c) => (c._id === id ? data.complaint : c)));
       setSelectedComplaint(null);
       setReopenReason("");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+
+    const handleDelete = async (id) => {
+    try {
+      if(!window.confirm('your complaint will be permanently deleted.are you sure you want to delete?')){
+        return
+      }
+      const res = await fetch(`${API_BASE}/api/complaints/${id}`, {
+        method: "delete",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      const data = await res.json();  
+      alert(data.message);
+      setComplaints((prev) => prev.filter((c) => c._id !== id));
     } catch (err) {
       console.error(err);
     }
@@ -418,8 +441,17 @@ export default function StudentComplaintsPage() {
               }`}>
                 {getStatusDisplay(c.status)}
               </span>
+
+             <button
+              onClick={() => handleDelete(c._id)}
+              className="text-xs px-3 py-1 rounded bg-red-500 text-white hover:bg-red-600 transition"
+             >
+              Delete Complaint
+            </button>
+
+
+
             </div>
-            
             <h3 className="font-semibold text-gray-800 mb-2">{c.title}</h3>
             <p className="text-gray-600 text-sm mb-3 line-clamp-2">{c.description}</p>
             

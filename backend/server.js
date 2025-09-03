@@ -503,6 +503,23 @@ app.get("/api/reports", authMiddleware, async (req, res) => {
   }
 });
 
+//the ff api enables the student to delete the complaint
+app.delete('/api/complaints/:id',authMiddleware,async(req,res)=>{
+    try  { const complaintID = req.params.id
+        const studentID = req.user.id
+        const specificComplaint = await complaint.findById(complaintID)
+        if(!specificComplaint){
+          return res.status(404).json({message:'complaint not found!'})
+        }
+        if(specificComplaint.studentID.toString() !== studentID){
+              res.status(403).json({message:'this complaint is not yours'})
+        }
+        const deletedComplaint = await complaint.findByIdAndDelete(complaintID)
+        return res.status(200).json({message:'complaint permanently removed'})}
+   catch(e){
+    return res.status(500).json({error:'internal server error!'})
+   }
+})
     // title: { 
     //     type: String, 
     //     trim: true, 
