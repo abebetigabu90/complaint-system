@@ -11,8 +11,8 @@ import Admin from '../models/Admin.js'
 // export const Admin = mongoose.model('Admin', adminSchema,'Admin');
 const seedAdmin = async () => {
   try {
-    const name = 'abebe';
-    const email = 'abebetigabu90@gmail.com';
+    const name = 'yonas';
+    const email = 'yonas90@gmail.com';
     const password = '1111';
     
     // Connect to database first
