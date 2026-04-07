@@ -635,7 +635,7 @@ export default function AdminComplaintsPage() {
                       </span>
                     </div>
                   )}
-                  {complaint.reOpenedCount > 0 && (
+                  {complaint.reOpenedCount >= 0 && (
                     <div>
                       <span className="text-gray-500">Re-opened: </span>
                       <span className="font-medium text-orange-600">
@@ -643,6 +643,7 @@ export default function AdminComplaintsPage() {
                       </span>
                     </div>
                   )}
+
                 </div> {/* ← This closing div was missing */}
 
                 {/* Reopen Reason */}
@@ -650,7 +651,7 @@ export default function AdminComplaintsPage() {
                   <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
                     <h4 className="text-sm font-medium text-orange-800 mb-2">Reopen Reason:</h4>
                     <p className="text-orange-700">{complaint.reOpenedReason}</p>
-                    {complaint.reOpenedCount > 0 && (
+                    {complaint.reOpenedCount >= 0 && (
                       <p className="text-xs text-orange-600 mt-2">
                         Reopened {complaint.reOpenedCount} time(s)
                       </p>
@@ -671,6 +672,11 @@ export default function AdminComplaintsPage() {
                     {complaint.resolvedAt && (
                       <p className="text-xs text-green-600 mt-1">
                         Resolved on: {new Date(complaint.resolvedAt).toLocaleDateString()}
+                      </p>
+                    )}
+                    {complaint.reSolvedCount > 0 && (
+                      <p className="text-xs text-orange-600 mt-2">
+                        re solved {complaint.reSolvedCount} time(s)
                       </p>
                     )}
                   </div>

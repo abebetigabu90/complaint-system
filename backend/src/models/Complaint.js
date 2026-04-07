@@ -28,6 +28,7 @@ const complaintSchema = new mongoose.Schema({
     resolvedAt:{type:Date},
     reOpenedReason:{type:String},
     reOpenedCount:{type:Number,default:0},
+    reSolvedCount:{type:Number,default:0},
     studentID: { 
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Student',  // Use string reference
